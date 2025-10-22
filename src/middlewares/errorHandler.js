@@ -1,13 +1,11 @@
 /* eslint-disable no-unused-vars */
-import HttpError from "http-errors"; 
+import { isHttpError } from "http-errors"; 
 
 export function errorHandler(err, req, res, next) {
-    const status = err.status || 500;
-    const message = err.message || 'Something went wrong';
-
-    res.status(status).json({
-        status,
-        message,
-        data: null,
-    });
+    if (isHttpError(err)) { 
+        return res.status(err.statusCode).json({ status: err.statusCode, message: err.message });
+    }
+    console.error(err);
+        
+    res.status(500).json({ status: 500, message: 'Something went wrong', data: err.message });
 }
