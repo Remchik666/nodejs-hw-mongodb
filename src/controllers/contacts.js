@@ -8,7 +8,7 @@ export async function getContactsController(req, res) {
     const { page, perPage } = parsePaginationParams(req.query);
     const { sortBy, sortOrder } = parseSortParams(req.query);
 
-    const contacts = await getAllContacts({ page, perPage, sortBy, sortOrder });
+    const contacts = await getAllContacts({ page, perPage, sortBy, sortOrder, userId: req.user.id });
 
     res.status(200).json({
         status: 200,
@@ -19,19 +19,24 @@ export async function getContactsController(req, res) {
 
 export async function getContactByIdController (req, res) {
     const { id } = req.params;
-    const contact = await getContactsById(id);
+    const contact = await getContactsById(id, req.user.id);
+
     if (!contact) {
-        throw createHttpError(404, 'Contact not found');
+        throw new createHttpError.NotFound('Contact not found');
     }
+
     res.status(200).json({
         status: 200,
         message: `Successfully found contact with id ${id}!`,
         data: contact,
     });
+
+    
+
 }
 
 export async function createContactController(req, res) { 
-    const contact = await createContact(req.body);
+    const contact = await createContact({ ...req.body, userId: req.user.id });
     
     res.status(201).json({
         status: 201,
@@ -42,18 +47,19 @@ export async function createContactController(req, res) {
 
 export async function deleteContactController(req, res) {
     const { id } = req.params;
-    const result = await deleteContact(id);
+
+    const result = await deleteContact(id, req.user.id);
     if (!result) {
-        throw createHttpError(404, 'Contact not found');
+        throw new createHttpError.NotFound('Contact not found');
     }
     res.status(204).send();
 }
 
 export async function updateContactController(req, res) {
-    const result = await updateContact(req.params.id, req.body);
+    const result = await updateContact(req.params.id, req.body, req.user.id);
 
     if (!result) {
-        throw createHttpError(404, 'Contact not found');
+        throw new createHttpError.NotFound('Contact not found');
     }
     res.json({ status: 200, message: "Contact update successfully", data: result });
 }
