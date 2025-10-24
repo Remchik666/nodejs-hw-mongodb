@@ -2,6 +2,10 @@ import { getAllContacts, getContactsById, createContact, deleteContact, updateCo
 import createHttpError from "http-errors"; 
 import { parsePaginationParams } from '../utils/parsePaginationParams.js';
 import { parseSortParams } from '../utils/parseSortParams.js';
+import * as fs from 'node:fs/promises';
+import path from 'node:path';
+import { uploadToCloudinary } from '../utils/uploadToCloudinary.js';
+import { getEnvVar } from "../utils/getEnvVar.js";
 
 
 export async function getContactsController(req, res) {
@@ -36,7 +40,19 @@ export async function getContactByIdController (req, res) {
 }
 
 export async function createContactController(req, res) { 
-    const contact = await createContact({ ...req.body, userId: req.user.id });
+    let avatar;
+
+    if (getEnvVar("UPLOAD_CLOUDINARY") == "true") {
+        const response = await uploadToCloudinary(req.file.path);
+        await fs.unlink(req.file.path);
+
+        avatar = response.secure_url;
+    } else { 
+        avatar = `http://localhost:3000/avatars/${req.file.filename}`;
+        await fs.rename(req.file.path, path.resolve("src/uploads/avatars", req.file.filename));
+    }
+
+    const contact = await createContact({ ...req.body, avatar, userId: req.user.id });
     
     res.status(201).json({
         status: 201,
