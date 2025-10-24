@@ -6,11 +6,9 @@ import crypto from 'node:crypto';
 import jwt from 'jsonwebtoken';
 import { getEnvVar } from '../utils/getEnvVar.js';
 import Handlebars from "handlebars";
-import * as fs from "node:fs";
+import * as fs from "node:fs/promises";
 import path from "node:path";
-import { sendMail } from '../utils/sendMail.js';
-
-const REQUEST_PASSWORD_RESET_TEMPLATE = fs.readFileSync(path.resolve("src/templates/request-password-reset.html"), { encoding: "utf-8" });
+import { sendEmail } from '../utils/sendMail.js';
 
 export async function registerUser(payload) { 
     const user = await User.findOne({ email: payload.email });
@@ -74,41 +72,61 @@ export async function refreshSession(sessionId, refreshToken) {
         refreshTokenValidUntil: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), // 30 days
     });
 }
-export async function requestPasswordReset(email) { 
+export async function requestResetToken(email) { 
     const user = await User.findOne({ email });
 
-    if (user == null) { 
-        return;
+    if (!user) { 
+        throw createHttpError.NotFound('User not found');
     }
 
-    const token = jwt.sign({ sub: user._id }, getEnvVar("JWT_SECRET"), { expiresIn: "15m" });
+    const resetToken = jwt.sign({ sub: user._id, email }, getEnvVar("JWT_SECRET"), { expiresIn: "5m" });
 
-    const templates = Handlebars.compile(REQUEST_PASSWORD_RESET_TEMPLATE);
-
+    const TEMPLATES_DIR = path.join(process.cwd(), 'src', 'templates');
+    const resetPasswordTemplatePath = path.join(TEMPLATES_DIR, 'reset-password-email.html');
+    const templateSource = (await fs.readFile(resetPasswordTemplatePath)).toString();
+    const template = Handlebars.compile(templateSource);
+    const html = template({
+        name: user.name,
+        link: `${getEnvVar("APP_DOMAIN")}/reset-password?token=${resetToken}`
+    });
     
-    await sendMail({
+    await sendEmail({
+        from: getEnvVar("SMTP_FROM"),
         to: email,
-        subject: "Reset password instruction",
-        html: templates({ resetPasswordLink: `http://localhost:3000/reset-password?token=${token}` })
+        subject: 'Reset your password',
+        html
     });
 }
 
-export async function resetPassword(token, password) { 
+export const resetPassword = async (payload) => {
+    let entries;
+
     try {
-        const decoded = jwt.verify(token, getEnvVar("JWT_SECRET"));
-
-        const hashedPassword = await bcrypt.hash(password, 10);
-
-        await User.findByIdAndUpdate(decoded.sub, { password: hashedPassword });
-    } catch(error) { 
-        if (error.name == "TokenExpiredError") { 
-            throw createHttpError.Unauthorized('Token is expired');
-        }
-
-        if (error.name == "JsonWebTokenError") { 
-            throw createHttpError.Unauthorized('Token is unauthorized');
-        }
-
-        throw error;
+        entries = jwt.verify(payload.token, getEnvVar('JWT_SECRET'));
+    } catch (err) {
+        if (err instanceof Error) throw createHttpError.Unauthorized("Token is expired or invalid.");
+        throw err;
     }
-}
+
+    const user = await User.findOne({
+        email: entries.email,
+        _id: entries.sub,
+    });
+
+    if (!user) {
+        throw createHttpError.BadRequest('User not found');
+    }
+
+    const session = await Session.findOne({ userId: user._id });
+    if (session) { 
+        await logoutUser(session._id);
+    }
+
+    const encryptedPassword = await bcrypt.hash(payload.password, 10);
+    
+
+    await User.updateOne(
+        { _id: user._id },
+        { password: encryptedPassword },
+    );
+};

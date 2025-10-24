@@ -12,11 +12,11 @@ router.get('/', ctrlWrapper(getContactsController));
 
 router.get('/:id', isValidId, ctrlWrapper(getContactByIdController));
 
-router.post("/", upload.single("avatar"), validateBody(createContactSchema), ctrlWrapper(createContactController));
+router.post("/", upload.single("photo"), validateBody(createContactSchema), ctrlWrapper(createContactController));
 
 router.delete("/:id", isValidId, ctrlWrapper(deleteContactController));
 
-router.patch("/:id", upload.single("avatar"), validateBody(updateContactSchema), isValidId, ctrlWrapper(updateContactController));
+router.patch("/:id", upload.single("photo"), validateBody(updateContactSchema), isValidId, ctrlWrapper(updateContactController));
 
 
 

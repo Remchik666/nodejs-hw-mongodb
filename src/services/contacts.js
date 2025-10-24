@@ -34,6 +34,6 @@ export function deleteContact(id, userId) {
     return ContactsCollection.findOneAndDelete({ _id: id, userId });
 }
 
-export function updateContact(id, payload, userId) { 
+export async function updateContact(id, payload, userId) { 
     return ContactsCollection.findOneAndUpdate({ _id: id, userId }, payload, {new: true}); 
 }

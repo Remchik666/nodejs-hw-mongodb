@@ -13,9 +13,8 @@ const contactsSchema = new Schema(
         email: {
             type: String,
         },
-        avatar: {
+        photo: {
             type: String,
-            required: false,
             default: null
         },
         isFavourite: {
