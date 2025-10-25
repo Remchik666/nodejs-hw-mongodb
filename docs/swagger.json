@@ -138,23 +138,7 @@
         ],
         "responses": {
           "204": {
-            "description": "Successfully deleted contact by id",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "required": [
-                    "status"
-                  ],
-                  "properties": {
-                    "status": {
-                      "type": "integer",
-                      "example": 204
-                    }
-                  }
-                }
-              }
-            }
+            "description": "Successfully deleted contact by id"
           },
           "401": {
             "$ref": "#/components/responses/401"
@@ -452,7 +436,7 @@
             }
           },
           {
-            "name": "order",
+            "name": "sortOrder",
             "in": "query",
             "description": "Sort order (asc or desc)",
             "required": false,
@@ -463,6 +447,26 @@
                 "desc"
               ],
               "example": "asc"
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "description": "Current page",
+            "required": false,
+            "schema": {
+              "type": "number",
+              "example": 4
+            }
+          },
+          {
+            "name": "perPage",
+            "in": "query",
+            "description": "Contacts per page",
+            "required": false,
+            "schema": {
+              "type": "number",
+              "example": 4
             }
           }
         ],
@@ -476,7 +480,13 @@
                   "required": [
                     "status",
                     "message",
-                    "data"
+                    "data",
+                    "totalItems",
+                    "page",
+                    "perPage",
+                    "totalPages",
+                    "hasNextPage",
+                    "hasPreviousPage"
                   ],
                   "properties": {
                     "status": {
@@ -492,6 +502,30 @@
                       "items": {
                         "$ref": "#/components/schemas/student"
                       }
+                    },
+                    "totalItems": {
+                      "type": "number",
+                      "example": 4
+                    },
+                    "page": {
+                      "type": "number",
+                      "example": 1
+                    },
+                    "perPage": {
+                      "type": "number",
+                      "example": 15
+                    },
+                    "totalPages": {
+                      "type": "number",
+                      "example": 5
+                    },
+                    "hasNextPage": {
+                      "type": "boolean",
+                      "example": false
+                    },
+                    "hasPreviousPage": {
+                      "type": "boolean",
+                      "example": true
                     }
                   }
                 }
