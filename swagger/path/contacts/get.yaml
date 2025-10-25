@@ -1,0 +1,69 @@
+tags:
+  - Contacts
+summary: Get all contacts
+operationId: getContacts
+description: Get all contacts
+security:
+  - bearerAuth: []
+
+parameters:
+  - name: sortBy
+    in: query
+    description: Field to sort by (e.g., name, email, createdAt)
+    required: false
+    schema:
+      type: string
+      enum: [name, email, createdAt]
+      example: name
+
+  - name: order
+    in: query
+    description: Sort order (asc or desc)
+    required: false
+    schema:
+      type: string
+      enum: [asc, desc]
+      example: asc
+
+responses:
+  '200':
+    description: Successfully get contacts
+    content:
+      application/json:
+        schema:
+          type: object
+          required:
+            - status
+            - message
+            - data
+          properties:
+            status:
+              type: integer
+              example: 200
+            message:
+              type: string
+              example: Successfully get contacts
+            data:
+              type: array
+              items:
+                $ref: ../../components/schemas/student.yaml
+  '401':
+    $ref: ../../components/responses/500.yaml
+  '404':
+    description: Contact not found
+    content:
+      application/json:
+        schema:
+          type: object
+          required:
+            - status
+            - message
+          properties:
+            status:
+              type: integer
+              example: 404
+            message:
+              type: string
+              example: Contact not found
+  '500':
+    $ref: ../../components/responses/500.yaml
